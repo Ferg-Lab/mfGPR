@@ -11,9 +11,13 @@ class GPRModel(object):
         self.X = X
         self.Y = Y
         if std is None:
-            self.std = np.random.normal(scale=0.1, size=self.X.shape[0])
+            # self.std = np.random.normal(scale=0.1, size=self.X.shape[0])
+            self.std = np.zeros(self.X.shape[0])
+            self.fixNoise = False
         else:
             self.std = std
+            self.fixNoise = True
+
         kernel = make_non_linear_kernels(
             base_kernel, n_fidelities=1, n_input_dims=X.shape[1]
         )[0]
@@ -30,7 +34,10 @@ class GPRModel(object):
         noise.fix()
         k = k_low + noise
         self.model = GPy.models.GPRegression(self.X, self.Y, k)
-        self.model.Gaussian_noise.fix(1e-5)
+
+        if self.fixNoise:
+            self.model.Gaussian_noise.fix(1e-5)
+
         self.model.optimize_restarts(verbose=False, robust=True, num_restarts=100)
         self.kernel_predict = self.model.kern.kern_fidelity_1.copy()
         return self
@@ -61,9 +68,12 @@ class GPRModel_multiFidelity(object):
         self.Y = Y
 
         if std is None:
-            self.std = np.random.normal(scale=0.1, size=self.X.shape[0])
+            # self.std = np.random.normal(scale=0.1, size=self.X.shape[0])
+            self.std = np.zeros(self.X.shape[0])
+            self.fixNoise = False
         else:
             self.std = std
+            self.fixNoise = True
 
         kernel = make_non_linear_kernels(
             base_kernel, n_fidelities=2, n_input_dims=X.shape[1]
@@ -84,7 +94,7 @@ class GPRModel_multiFidelity(object):
 
         self.theta = theta
         if self.theta is None:
-            assert self.isMultiFidelity == False
+            assert self.isMultiFidelity is False
         elif isinstance(self.theta, list):
             assert len(self.theta) == self.isMultiFidelity
             self.theta = np.array(self.theta)
@@ -132,7 +142,9 @@ class GPRModel_multiFidelity(object):
         noise.fix()
         k = k_high + noise
         self.model = GPy.models.GPRegression(augmented_input, self.Y, k)
-        self.model.Gaussian_noise.fix(1e-5)
+
+        if self.fixNoise:
+            self.model.Gaussian_noise.fix(1e-5)
 
         self.model.sum.mul.previous_fidelity_fidelity2.variance.fix(1.0)
 
