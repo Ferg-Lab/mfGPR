@@ -15,6 +15,8 @@ dependencies:
   - codecov
 
     # Pip-only installs
-  #- pip:
-  #  - codecov
+  - pip:
+    - emukit==0.4.10
+    - gpy==1.10.0
+    - numpy==1.21.6
 

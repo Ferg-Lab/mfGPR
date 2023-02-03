@@ -7,6 +7,24 @@ from mfGPR.utils import scalarize_factory
 
 
 class GPRModel(object):
+    """A Gaussian Process Regression Model.
+
+    Parameters
+    ----------
+    X : np.ndarray, shape=(n_samples, n_features)
+        Input features for training.
+    Y : np.ndarray, shape=(n_samples, 1)
+        Output values for training.
+    std : np.ndarray, shape=(n_samples,), optional
+        Per-point standard deviation for each sample. If None, it will be set to zeros
+        and instead a noise parameter will be learned. Default is None.
+    base_kernel : GPy.kern, optional
+        The base kernel for the Gaussian Process. Default is GPy.kern.RBF.
+    n_samples : int, optional
+        The number of samples to draw from the Gaussian Process for the
+        purpose of estimating the posterior distribution. Default is 10.
+    """
+
     def __init__(self, X, Y, std=None, base_kernel=GPy.kern.RBF, n_samples: int = 10):
         self.X = X
         self.Y = Y
@@ -43,6 +61,26 @@ class GPRModel(object):
         return self
 
     def predict(self, X, return_samples: bool = False):
+        """Make predictions using the Gaussian Process Regression Model.
+
+        Parameters
+        ----------
+        X : np.ndarray, shape=(n_samples, n_features)
+            Input features for prediction.
+        return_samples : bool, optional
+            Whether to return samples from the Gaussian Process. Default is False.
+
+        Returns
+        -------
+        if return_samples is False:
+            mu : np.ndarray, shape=(n_samples, 1)
+                The mean prediction.
+            std : np.ndarray, shape=(n_samples, 1)
+                The standard deviation of the prediction.
+        if return_samples is True:
+            Z : np.ndarray, shape=(n_samples, self.n_samples)
+                Samples from the Gaussian Process.
+        """
         if return_samples is False:
             mu, var = self.model.predict(X, kern=self.kernel_predict)
             return mu, np.sqrt(var)
@@ -53,6 +91,38 @@ class GPRModel(object):
 
 
 class GPRModel_multiFidelity(object):
+    """
+    Gaussian Process Regression Model for multi-fidelity data.
+
+        Parameters
+    ----------
+    X: numpy.ndarray
+        Input data with shape (n_samples, n_input_dims).
+    Y: numpy.ndarray
+        Output data with shape (n_samples, 1).
+    model_lows: list, GPRModel, or GPRModel_multiFidelity
+        List of low-fidelity GPR models, a single low-fidelity GPR model, or a multi-fidelity GPR model.
+    std: numpy.ndarray, optional
+        Standard deviation of the noise, by default None.
+    base_kernel: GPy.kern, optional
+        Base kernel for the model, by default GPy.kern.RBF.
+    scalarize: str, optional
+        Scalarizing function, by default 'linear'.
+    theta: numpy.ndarray, optional
+        Coefficients for scalarizing function, by default None.
+    n_samples: int, optional
+        Number of samples to draw for prediction, by default 10.
+
+
+    Methods
+    -------
+    get_mean_low(X, return_samples=False)
+        Returns the mean of low-fidelity outputs for the given input X.
+    fit()
+        Fits the Gaussian process regression model.
+    predict(X, return_samples=False)
+        Predicts the output for the given input X.
+    """
     def __init__(
         self,
         X,
@@ -108,6 +178,26 @@ class GPRModel_multiFidelity(object):
         self.fit()
 
     def get_mean_low(self, X, return_samples: bool = False):
+        """Get the mean or samples of the low-fidelity model.
+    
+        Parameters
+        ----------
+        X : np.ndarray, shape=(n_samples, n_features)
+            Input features for prediction.
+        return_samples : bool, optional
+            Whether to return samples from the Gaussian Process. Default is False.
+        
+        Returns
+        -------
+        if return_samples is False:
+            mu : np.ndarray, shape=(n_samples, 1)
+                The mean prediction of the low-fidelity model.
+            std : np.ndarray, shape=(n_samples, 1)
+                The standard deviation of the prediction of the low-fidelity model.
+        if return_samples is True:
+            Z : np.ndarray, shape=(n_samples, self.n_samples)
+                Samples from the low-fidelity model.
+        """
         if self.isMultiFidelity is False:
             if return_samples is False:
                 mean_low, _ = self.model_lows.predict(X)
@@ -157,6 +247,26 @@ class GPRModel_multiFidelity(object):
         return self
 
     def predict(self, X, return_samples=False):
+        """Make predictions using the Gaussian Process Regression Model.
+        
+        Parameters
+        ----------
+        X : np.ndarray, shape=(n_samples, n_features)
+            Input features for prediction.
+        return_samples : bool, optional
+            Whether to return samples from the Gaussian Process. Default is False.
+        
+        Returns
+        -------
+        if return_samples is False:
+            mu : np.ndarray, shape=(n_samples, 1)
+                The mean prediction.
+            std : np.ndarray, shape=(n_samples, 1)
+                The standard deviation of the prediction.
+        if return_samples is True:
+            Z : np.ndarray, shape=(n_samples, self.n_samples)
+                Samples from the Gaussian Process.
+        """
 
         mean_lows = self.get_mean_low(X, return_samples=True)
 
