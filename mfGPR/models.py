@@ -78,7 +78,7 @@ class GPRModel(object):
             std : np.ndarray, shape=(n_samples, 1)
                 The standard deviation of the prediction.
         if return_samples is True:
-            Z : np.ndarray, shape=(n_samples, self.n_samples)
+            Z : np.ndarray, shape=(self.n_samples, n_samples)
                 Samples from the Gaussian Process.
         """
         if return_samples is False:
@@ -94,7 +94,7 @@ class GPRModel_multiFidelity(object):
     """
     Gaussian Process Regression Model for multi-fidelity data.
 
-        Parameters
+    Parameters
     ----------
     X: numpy.ndarray
         Input data with shape (n_samples, n_input_dims).
@@ -123,6 +123,7 @@ class GPRModel_multiFidelity(object):
     predict(X, return_samples=False)
         Predicts the output for the given input X.
     """
+
     def __init__(
         self,
         X,
@@ -179,14 +180,14 @@ class GPRModel_multiFidelity(object):
 
     def get_mean_low(self, X, return_samples: bool = False):
         """Get the mean or samples of the low-fidelity model.
-    
+
         Parameters
         ----------
         X : np.ndarray, shape=(n_samples, n_features)
             Input features for prediction.
         return_samples : bool, optional
             Whether to return samples from the Gaussian Process. Default is False.
-        
+
         Returns
         -------
         if return_samples is False:
@@ -248,14 +249,14 @@ class GPRModel_multiFidelity(object):
 
     def predict(self, X, return_samples=False):
         """Make predictions using the Gaussian Process Regression Model.
-        
+
         Parameters
         ----------
         X : np.ndarray, shape=(n_samples, n_features)
             Input features for prediction.
         return_samples : bool, optional
             Whether to return samples from the Gaussian Process. Default is False.
-        
+
         Returns
         -------
         if return_samples is False:
@@ -264,8 +265,9 @@ class GPRModel_multiFidelity(object):
             std : np.ndarray, shape=(n_samples, 1)
                 The standard deviation of the prediction.
         if return_samples is True:
-            Z : np.ndarray, shape=(n_samples, self.n_samples)
-                Samples from the Gaussian Process.
+            Z : np.ndarray
+                Samples from the Gaussian Process. Shape will be determined by
+                the hierarchy of models defined in conditioning `model_lows`
         """
 
         mean_lows = self.get_mean_low(X, return_samples=True)

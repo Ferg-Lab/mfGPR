@@ -10,7 +10,8 @@ class mfGPR(object):
     The mfGPR class trains the GPR models using `GPRModel` and `GPRModel_multiFidelity` classes from the `mfGPR.models` module.
     
     Parameters:
-        data (dict): A dictionary containing the training data and any additional information, such as data standard deviations, conditions, or theta values.
+        data (dict): A dictionary containing the training data and any additional information, such as
+        data standard deviations, conditioning low-fidelity models and multi low-fidelity model weights values.
         n_samples (int, optional): The number of samples to use in the Monte Carlo approximation. Default is 10.
         
     Attributes:

@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-import GPy
 
 from mfGPR.models import GPRModel, GPRModel_multiFidelity
 
@@ -35,7 +34,7 @@ def test_GPRModel_predict_return_samples(data):
     X, Y = data
     model = GPRModel(X, Y, n_samples=2)
     Z = model.predict(X, return_samples=True)
-    assert Z.shape == (X.shape[0], model.n_samples)
+    assert Z.shape == (model.n_samples, X.shape[0])
 
 
 def test_GPRModel_multiFidelity_predict(multi_fidelity_data):
@@ -52,7 +51,7 @@ def test_GPRModel_multiFidelity_predict_return_samples(multi_fidelity_data):
     model_low = GPRModel(X_l, Y_l, n_samples=2)
     model = GPRModel_multiFidelity(X_h, Y_h, model_low, n_samples=2)
     Z = model.predict(X_h, return_samples=True)
-    assert Z.shape == (X_h.shape[0] ** 2, model.n_samples)
+    assert Z.shape == (model.n_samples**2, X_h.shape[0])
 
 
 def test_GPRModel_multiFidelity_predict_multiCondition(multi_fidelity_data):
@@ -75,4 +74,4 @@ def test_GPRModel_multiFidelity_predict_return_samples_multiCondition(
         X_h, Y_h, [model_low, model_low], theta=[0.5, 0.5], n_samples=2
     )
     Z = model.predict(X_h, return_samples=True)
-    assert Z.shape == (X_h.shape[0] ** 2, model.n_samples)
+    assert Z.shape == (model.n_samples**2, X_h.shape[0])
