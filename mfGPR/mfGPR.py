@@ -2,9 +2,10 @@ from mfGPR.models import GPRModel, GPRModel_multiFidelity
 
 
 class mfGPR(object):
-    def __init__(self, data: dict):
+    def __init__(self, data: dict, n_samples: int = 10):
 
         self.data = data
+        self.n_samples = n_samples
 
         for key, value_dict in self.data.items():
             if "condition" not in value_dict.keys():
@@ -15,7 +16,8 @@ class mfGPR(object):
                 self.train_on_data_dict(value_dict)
 
     def train_on_data_dict(self, data_dict):
-        assert "model" not in data_dict.keys()
+        if "model" in data_dict.keys():
+            pass
 
         X, Y = data_dict["data"]
         if "std" in data_dict.keys():
@@ -24,7 +26,7 @@ class mfGPR(object):
             std = None
 
         if "condition" not in data_dict.keys():
-            data_dict["model"] = GPRModel(X, Y, std=std)
+            data_dict["model"] = GPRModel(X, Y, std=std, n_samples=self.n_samples)
         else:
             condition = data_dict["condition"]
             if isinstance(condition, list):
@@ -50,7 +52,12 @@ class mfGPR(object):
                     model_lows = self.data[condition]["model"]
 
             data_dict["model"] = GPRModel_multiFidelity(
-                X, Y, model_lows=model_lows, std=std, theta=theta
+                X,
+                Y,
+                model_lows=model_lows,
+                std=std,
+                theta=theta,
+                n_samples=self.n_samples,
             )
 
     def __getitem__(self, name):
