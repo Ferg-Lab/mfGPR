@@ -19,4 +19,6 @@ dependencies:
     - emukit==0.4.10
     - gpy==1.10.0
     - numpy==1.21.6
+    - networkx
+    - matplotlib
 

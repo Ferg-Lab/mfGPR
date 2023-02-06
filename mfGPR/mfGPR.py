@@ -1,23 +1,25 @@
 from mfGPR.models import GPRModel, GPRModel_multiFidelity
+import matplotlib.pyplot as plt
+import networkx as nx
 
 
 class mfGPR(object):
     """
     A class for Multi-fidelity Gaussian Process Regression (mfGPR).
-    
+
     This class trains and stores multiple Gaussian Process Regression (GPR) models using data stored in a dictionary. The data
     in the dictionary can be either single-fidelity data or multi-fidelity data (conditioned on other lower-fidelity models).
     The mfGPR class trains the GPR models using `GPRModel` and `GPRModel_multiFidelity` classes from the `mfGPR.models` module.
-    
+
     Parameters:
         data (dict): A dictionary containing the training data and any additional information, such as
         data standard deviations, conditioning low-fidelity models and multi low-fidelity model weights values.
         n_samples (int, optional): The number of samples to use in the Monte Carlo approximation. Default is 10.
-        
+
     Attributes:
         data (dict): The input dictionary of training data.
         n_samples (int): The number of samples used in the Monte Carlo approximation.
-        
+
     Example with two fidelity levels:
         ```
         data = {
@@ -31,7 +33,7 @@ class mfGPR(object):
                 "std": Y_std_high,
             }
         }
-        
+
         mfGPR_model = mfGPR(data)
         high_pred = mfGPR_model['high'].predict(X_test)
         ```
@@ -51,7 +53,7 @@ class mfGPR(object):
                 "theta": [0.5, 0.5],
             }
         }
-        
+
         mfGPR_model = mfGPR(data)
         high_pred = mfGPR_model['high'].predict(X_test)
         ```
@@ -71,11 +73,12 @@ class mfGPR(object):
                 "condition": "mid",
             }
         }
-        
+
         mfGPR_model = mfGPR(data)
         high_pred = mfGPR_model['high'].predict(X_test)
         ```
     """
+
     def __init__(self, data: dict, n_samples: int = 10):
 
         self.data = data
@@ -138,3 +141,36 @@ class mfGPR(object):
         assert name in self.data.keys()
         assert "model" in self.data[name].keys()
         return self.data[name]["model"]
+
+    def _repr_html_(self):
+        g = nx.DiGraph()
+        g.add_nodes_from([(i, {"name": k}) for i, k in enumerate(self.data.keys())])
+        labels = nx.get_node_attributes(g, "name")
+        labels_inv = {v: k for k, v in labels.items()}
+        e_list = list()
+        for k, v in self.data.items():
+            if "condition" in v.keys():
+                if isinstance(v["condition"], str):
+                    e_list.append((labels_inv[v["condition"]], labels_inv[k]))
+                else:
+                    for cond in v["condition"]:
+                        e_list.append((labels_inv[cond], labels_inv[k]))
+
+        g.add_edges_from(e_list)
+
+        ax = plt.gca()
+        nx.draw(
+            g,
+            labels=labels,
+            font_weight="bold",
+            node_color="green",
+            font_size=14,
+            pos=nx.spectral_layout(g),
+            node_size=3000,
+            edge_color="red",
+            arrowstyle="Fancy, head_length=1, head_width=1",
+            width=2,
+            ax=ax,
+        )
+        ax.set_xlim(*[x * 1.2 for x in ax.get_xlim()])
+        ax.set_ylim(*[x * 1.2 for x in ax.get_ylim()])
