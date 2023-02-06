@@ -77,3 +77,26 @@ def test_mfGPR_init_with_three_fidelity_levels():
     mu, std = mfGPR_model["high"].predict(X_test)
     assert mu.shape == (X_test.shape[0], 1)
     assert std.shape == (X_test.shape[0], 1)
+
+
+def test_mfGPR_init_with_three_fidelity_levels_mixed():
+    data = {
+        "low": {
+            "data": [X_train_low, Y_train_low],
+        },
+        "mid": {
+            "data": [X_train_mid, Y_train_mid],
+            "condition": "low",
+        },
+        "high": {
+            "data": [X_train, Y_train],
+            "condition": ["mid", "low"],
+            "theta": [0.5, 0.5],
+        },
+    }
+
+    mfGPR_model = mfGPR(data, n_samples=2)
+
+    mu, std = mfGPR_model["high"].predict(X_test)
+    assert mu.shape == (X_test.shape[0], 1)
+    assert std.shape == (X_test.shape[0], 1)

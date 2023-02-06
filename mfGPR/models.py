@@ -3,6 +3,7 @@ from emukit.multi_fidelity.models.non_linear_multi_fidelity_model import (
     make_non_linear_kernels,
 )
 import numpy as np
+import math
 from mfGPR.utils import scalarize_factory
 
 
@@ -60,7 +61,7 @@ class GPRModel(object):
         self.kernel_predict = self.model.kern.kern_fidelity_1.copy()
         return self
 
-    def predict(self, X, return_samples: bool = False):
+    def predict(self, X, return_samples: bool = False, exp_samples_factor: int = 1):
         """Make predictions using the Gaussian Process Regression Model.
 
         Parameters
@@ -86,7 +87,9 @@ class GPRModel(object):
             return mu, np.sqrt(var)
         else:
             mu, C = self.model.predict(X, kern=self.kernel_predict, full_cov=True)
-            Z = np.random.multivariate_normal(mu.flatten(), C, self.n_samples)
+            Z = np.random.multivariate_normal(
+                mu.flatten(), C, int(self.n_samples**exp_samples_factor)
+            )
             return Z
 
 
@@ -211,13 +214,30 @@ class GPRModel_multiFidelity(object):
                 )
                 mean_low = self.scalarize(means_low, self.theta)
             else:
-                means_low = np.concatenate(
-                    [
-                        m.predict(X, return_samples=True).T[None]
-                        for m in self.model_lows
-                    ],
-                    axis=0,
-                )
+                means_low = [
+                    m.predict(X, return_samples=True).T[None] for m in self.model_lows
+                ]
+                shapes = [x.shape[-1] for x in means_low]
+
+                # if not all the same because mixing gp orders
+                if all(max(shapes) == x for x in shapes) is False:
+                    # get gp orders
+                    gp_orders = [int(math.log(x, self.n_samples)) for x in shapes]
+
+                    # get correction factors for alignment to largest order
+                    exp_factors = [max(gp_orders) - gpo + 1 for gpo in gp_orders]
+                    # exp_factors = [int(round(math.log(max(shapes), x))) for x in shapes]
+
+                    # regenerate consistent number of samples
+                    means_low = [
+                        m.predict(X, return_samples=True, exp_samples_factor=fac).T[
+                            None
+                        ]
+                        for m, fac in zip(self.model_lows, exp_factors)
+                    ]
+
+                means_low = np.concatenate(means_low, axis=0)
+
                 mean_low = self.scalarize(means_low, self.theta).T
 
         return mean_low
@@ -247,7 +267,7 @@ class GPRModel_multiFidelity(object):
 
         return self
 
-    def predict(self, X, return_samples=False):
+    def predict(self, X, return_samples: bool = False, exp_samples_factor: int = 1):
         """Make predictions using the Gaussian Process Regression Model.
 
         Parameters
@@ -285,7 +305,9 @@ class GPRModel_multiFidelity(object):
                 mu, C = self.model.predict(
                     augmented_input, kern=self.kernel_predict, full_cov=True
                 )
-                Z = np.random.multivariate_normal(mu.flatten(), C, self.n_samples)
+                Z = np.random.multivariate_normal(
+                    mu.flatten(), C, int(self.n_samples**exp_samples_factor)
+                )
                 Zs.append(Z)
             else:
                 mu, v = self.model.predict(augmented_input, kern=self.kernel_predict)

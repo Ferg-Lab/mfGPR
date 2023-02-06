@@ -75,3 +75,32 @@ def test_GPRModel_multiFidelity_predict_return_samples_multiCondition(
     )
     Z = model.predict(X_h, return_samples=True)
     assert Z.shape == (model.n_samples**2, X_h.shape[0])
+
+
+def test_GPRModel_multiFidelity_predict_multiCondition_mixed(multi_fidelity_data):
+    X_l, Y_l, X_h, Y_h = multi_fidelity_data
+    model_low = GPRModel(X_l, Y_l, n_samples=2)
+    model_mid = GPRModel_multiFidelity(
+        X_h, Y_h, [model_low, model_low], theta=[0.5, 0.5], n_samples=2
+    )
+    model = GPRModel_multiFidelity(
+        X_h, Y_h, [model_low, model_mid], theta=[0.5, 0.5], n_samples=2
+    )
+    mu, std = model.predict(X_h)
+    assert mu.shape == (X_h.shape[0], 1)
+    assert std.shape == (X_h.shape[0], 1)
+
+
+def test_GPRModel_multiFidelity_predict_return_samples_multiCondition_mixed(
+    multi_fidelity_data,
+):
+    X_l, Y_l, X_h, Y_h = multi_fidelity_data
+    model_low = GPRModel(X_l, Y_l, n_samples=2)
+    model_mid = GPRModel_multiFidelity(
+        X_h, Y_h, [model_low, model_low], theta=[0.5, 0.5], n_samples=2
+    )
+    model = GPRModel_multiFidelity(
+        X_h, Y_h, [model_low, model_mid], theta=[0.5, 0.5], n_samples=2
+    )
+    Z = model.predict(X_h, return_samples=True)
+    assert Z.shape == (model.n_samples**3, X_h.shape[0])
