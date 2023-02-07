@@ -176,10 +176,10 @@ class mfGPR(object):
             font_weight="bold",
             node_color="green",
             font_size=14,
-            pos=nx.spectral_layout(g),
-            node_size=500,
+            pos=nx.shell_layout(g),
+            node_size=3000,
             edge_color="red",
-            arrowstyle="Fancy, head_length=1, head_width=1",
+            arrowstyle="Fancy, head_length=2, head_width=3",
             width=2,
             ax=ax,
         )
