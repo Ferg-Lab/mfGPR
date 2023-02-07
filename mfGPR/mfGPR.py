@@ -1,6 +1,7 @@
 from mfGPR.models import GPRModel, GPRModel_multiFidelity
 import matplotlib.pyplot as plt
 import networkx as nx
+import time
 
 
 class mfGPR(object):
@@ -86,15 +87,25 @@ class mfGPR(object):
 
         for key, value_dict in self.data.items():
             if "condition" not in value_dict.keys():
+                print(f"Training model '{key}'")
+                start = time.time()
                 self.train_on_data_dict(value_dict)
+                end = time.time()
+                print(f"Training model '{key}' completed in {(end - start) / 60} m")
 
-        for key, value in data.items():
-            if "condition" in value.keys():
+        for key, value_dict in data.items():
+            if "condition" in value_dict.keys():
+                print(
+                    f"Training model '{key}', conditioned on model(s) '{value_dict['condition']}'"
+                )
+                start = time.time()
                 self.train_on_data_dict(value_dict)
+                end = time.time()
+                print(f"Training model '{key}' completed in {(end - start) / 60} m")
 
     def train_on_data_dict(self, data_dict):
         if "model" in data_dict.keys():
-            pass
+            return
 
         X, Y = data_dict["data"]
         if "std" in data_dict.keys():
@@ -166,7 +177,7 @@ class mfGPR(object):
             node_color="green",
             font_size=14,
             pos=nx.spectral_layout(g),
-            node_size=3000,
+            node_size=500,
             edge_color="red",
             arrowstyle="Fancy, head_length=1, head_width=1",
             width=2,
