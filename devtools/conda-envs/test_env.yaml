@@ -21,4 +21,6 @@ dependencies:
     - numpy==1.21.6
     - networkx
     - matplotlib
+    - tqdm
+    - scikit-learn
 

@@ -1,16 +1,21 @@
 from mfGPR.models import GPRModel, GPRModel_multiFidelity
+from mfGPR.utils import get_scalarization_coefficients
 import matplotlib.pyplot as plt
 import networkx as nx
 import time
+from tqdm.auto import tqdm
+from sklearn.model_selection import KFold
+import numpy as np
 
 
 class mfGPR(object):
     """
     A class for Multi-fidelity Gaussian Process Regression (mfGPR).
 
-    This class trains and stores multiple Gaussian Process Regression (GPR) models using data stored in a dictionary. The data
-    in the dictionary can be either single-fidelity data or multi-fidelity data (conditioned on other lower-fidelity models).
-    The mfGPR class trains the GPR models using `GPRModel` and `GPRModel_multiFidelity` classes from the `mfGPR.models` module.
+    This class trains and stores multiple Gaussian Process Regression (GPR) models using data stored in a dictionary.
+    The data in the dictionary can be either single-fidelity data or multi-fidelity data (conditioned on other
+    lower-fidelity models). The mfGPR class trains the GPR models using `GPRModel` and `GPRModel_multiFidelity` classes
+    from the `mfGPR.models` module.
 
     Parameters:
         data (dict): A dictionary containing the training data and any additional information, such as
@@ -80,10 +85,20 @@ class mfGPR(object):
         ```
     """
 
-    def __init__(self, data: dict, n_samples: int = 10):
+    def __init__(
+        self,
+        data: dict,
+        n_samples: int = 10,
+        cv_discretization: int = 51,
+        n_splits=5,
+    ):
 
         self.data = data
         self.n_samples = n_samples
+        self.cv_discretization = cv_discretization
+        self.n_splits = n_splits
+
+        start_fit = time.time()
 
         for key, value_dict in self.data.items():
             if "condition" not in value_dict.keys():
@@ -103,23 +118,34 @@ class mfGPR(object):
                 end = time.time()
                 print(f"Training model '{key}' completed in {(end - start) / 60} m")
 
+        for key, value_dict in data.items():
+            if "cv" in value_dict.keys():
+                if value_dict['cv']:
+                    print(
+                        f"Cross validating mode '{key}'"
+                    )
+                start = time.time()
+                self._do_cross_validation(value_dict, discretization=self.cv_discretization,n_splits=self.n_splits)
+                end = time.time()
+                print(f"Cross validation completed completed in {(end - start) / 60} m")
+
+        end_fit = time.time()
+        print(f"All GPR models fit in: {(end_fit - start_fit) / 60} m")
+
     def train_on_data_dict(self, data_dict):
         if "model" in data_dict.keys():
             return
 
         X, Y = data_dict["data"]
-        if "std" in data_dict.keys():
-            std = data_dict["std"]
-        else:
-            std = None
+        if "std" not in data_dict.keys():
+            data_dict["std"] = None
+        std = data_dict["std"]
 
         if "condition" not in data_dict.keys():
             data_dict["model"] = GPRModel(X, Y, std=std, n_samples=self.n_samples)
         else:
             condition = data_dict["condition"]
             if isinstance(condition, list):
-                assert "theta" in data_dict.keys()
-                theta = data_dict["theta"]
 
                 model_lows = list()
                 for m in condition:
@@ -128,6 +154,19 @@ class mfGPR(object):
                     else:
                         self.train_on_data_dict(self.data[m])
                         model_lows.append(self.data[m]["model"])
+
+                # assert "theta" in data_dict.keys()
+                if "theta" not in data_dict.keys():
+                    print(
+                        "Performing cross validation because theta values not provided"
+                    )
+                    self._do_theta_cross_validation(
+                        data_dict,
+                        discretization=self.cv_discretization,
+                        n_splits=self.n_splits,
+                    )
+                    print(f"Optimal theta found for {model_lows}: {data_dict['theta']}")
+                theta = data_dict["theta"]
 
                 assert len(model_lows) == len(theta)
 
@@ -147,6 +186,96 @@ class mfGPR(object):
                 theta=theta,
                 n_samples=self.n_samples,
             )
+
+    def _do_cross_validation(self, data_dict, discretization=51, n_splits=5):
+        if 'cv_MSE' in data_dict.keys():
+            return
+        
+        X, Y = data_dict["data"]
+        std = data_dict["std"]
+
+        if 'condition' in data_dict.keys():
+            if isinstance(data_dict['condition'], str):
+                model_lows = self.data[data_dict['condition']]["model"]
+                theta = None
+            else:
+                model_lows = [self.data[m]["model"] for m in data_dict["condition"]]
+                theta = data_dict['theta']
+        else:
+            model_lows = None
+
+
+        if isinstance(n_splits, str) and n_splits.upper() == 'LOO':
+            n_splits = X.shape[0]
+        kf = KFold(n_splits=n_splits)
+
+        errs = list()
+        for train_index, test_index in tqdm(
+            kf.split(X),
+            desc="CV folds",
+            leave=False,
+            total=kf.n_splits if kf.n_splits > 0 else X.shape[0],
+        ):
+
+            if model_lows is not None:
+                model = GPRModel_multiFidelity(
+                    X[train_index],
+                    Y[train_index],
+                    model_lows=model_lows,
+                    std=std[train_index] if std is not None else std,
+                    theta=theta,
+                    n_samples=self.n_samples,
+                )
+            else:
+                model = GPRModel(
+                    X[train_index],
+                    Y[train_index],
+                    std=std[train_index] if std is not None else std,
+                    n_samples=self.n_samples,
+                )
+
+            y_pred = model.predict(X[test_index])[0]
+            errs.append(((y_pred - Y[test_index]) ** 2).mean())
+
+        data_dict['cv_MSE'] = np.mean(errs)
+
+    def _do_theta_cross_validation(self, data_dict, discretization=51, n_splits=5):
+        X, Y = data_dict["data"]
+        std = data_dict["std"]
+        model_lows = [self.data[m]["model"] for m in data_dict["condition"]]
+
+        thetas = get_scalarization_coefficients(
+            len(model_lows), discretization=discretization
+        )
+
+        if isinstance(n_splits, str) and n_splits.upper() == 'LOO':
+            n_splits = X.shape[0]
+        kf = KFold(n_splits=n_splits)
+
+        theta_cv_err = list()
+        for theta in tqdm(thetas, desc="Sweeping possible theta values"):
+
+            errs = list()
+            for train_index, test_index in tqdm(
+                kf.split(X),
+                desc="CV folds",
+                leave=False,
+                total=kf.n_splits if kf.n_splits > 0 else X.shape[0],
+            ):
+                model = GPRModel_multiFidelity(
+                    X[train_index],
+                    Y[train_index],
+                    model_lows=model_lows,
+                    std=std[train_index] if std is not None else std,
+                    theta=theta,
+                    n_samples=self.n_samples,
+                )
+                y_pred = model.predict(X[test_index])[0]
+                errs.append(((y_pred - Y[test_index]) ** 2).mean())
+
+            theta_cv_err.append(np.mean(errs))
+        data_dict['theta'] = thetas[np.argmin(theta_cv_err)]
+        data_dict['cv_MSE'] = min(theta_cv_err)
 
     def __getitem__(self, name):
         assert name in self.data.keys()
