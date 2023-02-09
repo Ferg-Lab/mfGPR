@@ -122,12 +122,12 @@ class mfGPR(object):
             if "cv" in value_dict.keys():
                 if value_dict['cv']:
                     print(
-                        f"Cross validating mode '{key}'"
+                        f"Cross validating model '{key}'"
                     )
-                start = time.time()
-                self._do_cross_validation(value_dict, discretization=self.cv_discretization,n_splits=self.n_splits)
-                end = time.time()
-                print(f"Cross validation completed completed in {(end - start) / 60} m")
+                    start = time.time()
+                    self._do_cross_validation(value_dict, n_splits=self.n_splits)
+                    end = time.time()
+                    print(f"Cross validation completed completed in {(end - start) / 60} m")
 
         end_fit = time.time()
         print(f"All GPR models fit in: {(end_fit - start_fit) / 60} m")
@@ -187,7 +187,7 @@ class mfGPR(object):
                 n_samples=self.n_samples,
             )
 
-    def _do_cross_validation(self, data_dict, discretization=51, n_splits=5):
+    def _do_cross_validation(self, data_dict, n_splits=5):
         if 'cv_MSE' in data_dict.keys():
             return
         
