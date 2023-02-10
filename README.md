@@ -1,11 +1,10 @@
-mfGPR
+Multi-fidelity Gaussian process regression
 ==============================
 [//]: # (Badges)
 [![GitHub Actions Build Status](https://github.com/Ferg-Lab/mfGPR/workflows/CI/badge.svg)](https://github.com/Ferg-Lab/mfGPR/actions?query=workflow%3ACI)
 <!--  [![codecov](https://codecov.io/gh/Ferg-Lab/mfGPR/branch/main/graph/badge.svg)](https://codecov.io/gh/Ferg-Lab/mfGPR/branch/main) -->
 
 
-Multi-fidelity Gaussian process regression
 
 Seemlessly perform multi-fidelity (and multi-objective) Gaussian process regression. This code is largely a wrapper for [GPy](https://github.com/SheffieldML/GPy) implementing the multi-fidelity Gaussian process regression described in *Perdikaris P., Raissi M., Damianou A., Lawrence N. D. and Karniadakis G. E. 2017Nonlinear information fusion algorithms for data-efficient multi-fidelity modelling Proc. R. Soc. A.473* ([paper](https://doi.org/10.1098/rspa.2016.0751), [code](https://github.com/paraklas/NARGP)), with some added functionality for heteroskedastic noise and multi-objective model structuring.
 
