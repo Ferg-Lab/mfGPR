@@ -88,7 +88,7 @@ class mfGPR(object):
     def __init__(
         self,
         data: dict,
-        n_samples: int = 10,
+        n_samples: int = 100,
         cv_discretization: int = 51,
         n_splits=5,
     ):
