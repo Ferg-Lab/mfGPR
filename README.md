@@ -38,13 +38,16 @@ Usage
 -------
 Example Jupyter notebooks demonstrating the functionality outlined here are available in the `examples` directory.
 
-Gaussian process regression models can be defined and trained by passing a dictionary containing the data intended to train the models. For example, for a simple model trained on some (`X`, `Y`) data pairs:
+### Simple GPR  
+
+Gaussian process regression models can be defined and trained by passing a dictionary containing the data intended to train the models. For example, for a simple model trained on some (`X`, `Y`) data pairs (optionally also including per-point uncertainties `Y_std` heteroskedastic noise, if specified):
 
 ```python
 from mfGPR.mfGPR import mfGPR
 
 # define data
 data = {'model': {'data':[X, Y]}}
+#data = {'model': {'data':[X, Y], 'std':Y_std}} # or with heteroskedastic noise
 
 # train model
 models = mfGPR(data=data)
@@ -52,6 +55,8 @@ models = mfGPR(data=data)
 # predict on some test points
 mean, std = models['model'].predict(X_test)
 ```
+
+### Multi-fidelity GPR
 
 More complex multi-fidelity models can then be defined by specifying a conditioning models treated as the low-fidelity source model:
 
@@ -78,6 +83,8 @@ models
 
 This structure corresponds to a three-level GPR with `mid`-level model conditioned on posterior of the GPR trained on the `low` data, and the `high`-level then conditioned on the posterior of the `mid`-level model. The `_repr_html_` for `models` in a Jupyter notebook will generate a graphical representation of this model structure for simpler visualization of the hierarchical GPR structre:
 ![image](https://user-images.githubusercontent.com/40403472/218190481-7c681d38-3d1c-4db7-8ca5-bf4ab1ea93fe.png)
+
+### Multi-fidelity & multi-objective GPR
 
 Another functionality is a multi-objective structure where data from multible objective functions and data sources can be used to condition a higher fidelity model:
 
@@ -107,6 +114,8 @@ models
 ![image](https://user-images.githubusercontent.com/40403472/218190960-6a6663d4-b1db-44d9-a8f5-5c7234eea266.png)
 
 Operationally, this multi-objective definition performs a scalarization of the the low-fidelity functions and feeds the scalarized posterior as the low-fidelity posterior to the higher fidelity model conditioning on these two low-fidelity models. The scalarization can either be defined by passing a predefined scalarization as a `theta` key in the data dictionary, or if no `theta` key is provided cross-validation is performed to determine the optimal values of `theta` by performing `n_splits`-fold cross validation over a grid of possible `theta` values discretized according to `cv_discretization`.   
+
+### Cross validation
 
 Lastly, cross-validation can be peformed after the models have been fit by passing the `'cv':True` in the data dictionary: 
 
