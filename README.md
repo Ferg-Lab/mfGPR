@@ -21,7 +21,7 @@ Installation
 An environment file `env.yaml` is provided that contains the base dependencies. With [conda](https://conda.io/projects/conda/en/latest/user-guide/install/index.html) installed:
 
 ```
-$ conda env create --file mfGPR
+$ conda env create --file env.yaml
 $ source activate mfGPR
 ```
 
