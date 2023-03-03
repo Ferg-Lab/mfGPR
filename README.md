@@ -22,7 +22,7 @@ An environment file `env.yaml` is provided that contains the base dependencies. 
 
 ```
 $ conda env create --file env.yaml
-$ source activate mfGPR
+$ conda activate mfGPR
 ```
 
 With the environment active the package can then be installed:
