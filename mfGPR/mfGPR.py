@@ -165,7 +165,7 @@ class mfGPR(object):
                         discretization=self.cv_discretization,
                         n_splits=self.n_splits,
                     )
-                    print(f"Optimal theta found for {model_lows}: {data_dict['theta']}")
+                    print(f"Optimal theta found for {condition}: {data_dict['theta']}")
                 theta = data_dict["theta"]
 
                 assert len(model_lows) == len(theta)
