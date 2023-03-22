@@ -131,6 +131,7 @@ class mfGPR(object):
 
         end_fit = time.time()
         print(f"All GPR models fit in: {(end_fit - start_fit) / 60} m")
+        self.fit_time = (end_fit - start_fit) / 60
 
     def train_on_data_dict(self, data_dict):
         if "model" in data_dict.keys():
@@ -238,6 +239,7 @@ class mfGPR(object):
             errs.append(((y_pred - Y[test_index]) ** 2).mean())
 
         data_dict['cv_MSE'] = np.mean(errs)
+        data_dict['cv_MSE_samples'] = errs
 
     def _do_theta_cross_validation(self, data_dict, discretization=51, n_splits=5):
         X, Y = data_dict["data"]
