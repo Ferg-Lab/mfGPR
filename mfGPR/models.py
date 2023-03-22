@@ -24,9 +24,12 @@ class GPRModel(object):
     n_samples : int, optional
         The number of samples to draw from the Gaussian Process for the
         purpose of estimating the posterior distribution. Default is 10.
+    ARD : bool, optional
+        If to use Automatic Relevance Detection (ARD) kernel that assings
+        different lengthscale parameters to each input dimention
     """
 
-    def __init__(self, X, Y, std=None, base_kernel=GPy.kern.RBF, n_samples: int = 10):
+    def __init__(self, X, Y, std=None, base_kernel=GPy.kern.RBF, ARD=False, n_samples: int = 10):
         self.X = X
         self.Y = Y
         if std is None:
@@ -38,7 +41,7 @@ class GPRModel(object):
             self.fixNoise = True
 
         kernel = make_non_linear_kernels(
-            base_kernel, n_fidelities=1, n_input_dims=X.shape[1]
+            base_kernel, n_fidelities=1, n_input_dims=X.shape[1], ARD=ARD
         )[0]
         self.kernel = kernel
         self.n_samples = n_samples
@@ -115,6 +118,9 @@ class GPRModel_multiFidelity(object):
         Coefficients for scalarizing function, by default None.
     n_samples: int, optional
         Number of samples to draw for prediction, by default 10.
+    ARD : bool, optional
+        If to use Automatic Relevance Detection (ARD) kernel that assings
+        different lengthscale parameters to each input dimention
 
 
     Methods
@@ -134,6 +140,7 @@ class GPRModel_multiFidelity(object):
         model_lows,
         std=None,
         base_kernel=GPy.kern.RBF,
+        ARD=False,
         scalarize="linear",
         theta=None,
         n_samples=10,
@@ -150,7 +157,7 @@ class GPRModel_multiFidelity(object):
             self.fixNoise = True
 
         kernel = make_non_linear_kernels(
-            base_kernel, n_fidelities=2, n_input_dims=X.shape[1]
+            base_kernel, n_fidelities=2, n_input_dims=X.shape[1], ARD=ARD
         )[1]
         self.kernel = kernel
 
