@@ -21,6 +21,10 @@ class mfGPR(object):
         data (dict): A dictionary containing the training data and any additional information, such as
         data standard deviations, conditioning low-fidelity models and multi low-fidelity model weights values.
         n_samples (int, optional): The number of samples to use in the Monte Carlo approximation. Default is 10.
+        ARD (bool, optional): If to use Automatic Relevance Detection (ARD) kernel that specifies a different lengthscale parameter for each dimention
+        n_splits (int, optional): Number of cross-validation splits to execute when performing cross-validation
+        cv_discretization (int, optional): Number of values to discretize mixing coefficents when building multi-objective models
+
 
     Attributes:
         data (dict): The input dictionary of training data.
@@ -91,12 +95,14 @@ class mfGPR(object):
         n_samples: int = 100,
         cv_discretization: int = 51,
         n_splits=5,
+        ARD=False,
     ):
 
         self.data = data
         self.n_samples = n_samples
         self.cv_discretization = cv_discretization
         self.n_splits = n_splits
+        self.ARD = ARD
 
         start_fit = time.time()
 
@@ -143,7 +149,7 @@ class mfGPR(object):
         std = data_dict["std"]
 
         if "condition" not in data_dict.keys():
-            data_dict["model"] = GPRModel(X, Y, std=std, n_samples=self.n_samples)
+            data_dict["model"] = GPRModel(X, Y, std=std, ARD=self.ARD, n_samples=self.n_samples)
         else:
             condition = data_dict["condition"]
             if isinstance(condition, list):
@@ -166,7 +172,7 @@ class mfGPR(object):
                         discretization=self.cv_discretization,
                         n_splits=self.n_splits,
                     )
-                    print(f"Optimal theta found for {model_lows}: {data_dict['theta']}")
+                    print(f"Optimal theta found for {condition}: {data_dict['theta']}")
                 theta = data_dict["theta"]
 
                 assert len(model_lows) == len(theta)
@@ -184,6 +190,7 @@ class mfGPR(object):
                 Y,
                 model_lows=model_lows,
                 std=std,
+                ARD=self.ARD,
                 theta=theta,
                 n_samples=self.n_samples,
             )
@@ -205,7 +212,6 @@ class mfGPR(object):
         else:
             model_lows = None
 
-
         if isinstance(n_splits, str) and n_splits.upper() == 'LOO':
             n_splits = X.shape[0]
         kf = KFold(n_splits=n_splits)
@@ -224,6 +230,7 @@ class mfGPR(object):
                     Y[train_index],
                     model_lows=model_lows,
                     std=std[train_index] if std is not None else std,
+                    ARD=self.ARD,
                     theta=theta,
                     n_samples=self.n_samples,
                 )
@@ -232,6 +239,7 @@ class mfGPR(object):
                     X[train_index],
                     Y[train_index],
                     std=std[train_index] if std is not None else std,
+                    ARD=self.ARD,
                     n_samples=self.n_samples,
                 )
 
@@ -269,6 +277,7 @@ class mfGPR(object):
                     Y[train_index],
                     model_lows=model_lows,
                     std=std[train_index] if std is not None else std,
+                    ARD=self.ARD,
                     theta=theta,
                     n_samples=self.n_samples,
                 )
